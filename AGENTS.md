@@ -47,7 +47,7 @@ layout.tsx (html/body — minimal, NO h-full or flex-col constraints)
 ## Section Flow (page.tsx order)
 | # | Section | Component | Animation |
 |---|---------|-----------|-----------|
-| ST0 | Loading | Loader | Skeleton shimmer, auto-dismiss |
+| ST0 | Loading | Loader | Skeleton shimmer, auto-dismiss at 600ms + 800ms fade |
 | ST1 | Hero | HeroSection | Canvas 240-frame animation |
 | ST2 | About | AboutSection | Slide-in via SectionReveal |
 | ST3 | Portfolio | ScreenReveal → FilmShowcase | Clip-path + 500vh pinned scroll |
@@ -57,6 +57,118 @@ layout.tsx (html/body — minimal, NO h-full or flex-col constraints)
 | ST7 | Team | TeamSection | Slide-in |
 | ST8 | Music Vids | HotelShowcase | Slide-in (0.15s delay) |
 | ST9 | Contact | ContactPage | Slide-in (0.3s delay) |
+
+## Data Structures
+
+### filmProjects (defined in page.tsx)
+```ts
+const filmProjects = [
+  { id: 'ka-daw', title: 'Ka Daw', year: '2022', type: 'Feature Film',
+    description: 'A gripping Khasi thriller...',
+    image: 'https://images.unsplash.com/...' },
+  { id: 'lanot', title: 'Lanot', year: '2024', type: 'Documentary',
+    description: 'A cinematic cry from the coal dust...',
+    image: 'https://images.unsplash.com/...' },
+  { id: 'kadaw', title: 'Kadaw', year: '2022', type: 'Feature Film',
+    description: 'A Khasi feature film weaving cultural authenticity...',
+    image: 'https://images.unsplash.com/...' },
+  { id: '9-lad', title: '9-Lad / Khyndai Lad', year: '2020', type: 'Feature Film',
+    description: 'A Khasi feature film blending local narratives...',
+    image: 'https://images.unsplash.com/...' },
+  { id: 'kni', title: 'Kñi', year: '2026', type: 'Feature Film',
+    description: 'A Khasi feature highlighting the role of the maternal uncle...',
+    image: 'https://images.unsplash.com/...' },
+];
+```
+
+### interview object (passed to FilmShowcase)
+```ts
+interview={{
+  label: 'In Conversation',
+  name: 'with Kiki Garod',
+  duration: '06:13',
+  image: 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=1200&h=675&fit=crop&auto=format',
+}}
+```
+
+## Loader
+- Renders for 600ms, then triggers `onDone` callback after 800ms fade
+- 3×2 grid of skeleton-shimmer placeholders + text shimmer lines
+- `z-[9999]` to cover everything during load
+- Uses CSS `@keyframes shimmer` animation with `linear-gradient` sweep
+
+## Header details
+- Fixed position at `top-0`, `z-[100]`
+- `background: rgba(7,7,7,0.72)` with `backdrop-filter: blur(14px)`
+- Logo: "KIKI GAROD" in serif font
+- Nav: About (`#about`), Works (`#`), Casting (`#`)
+- Right links: YT (`https://www.youtube.com/channel/UCffneAgo2PbKkfivkvlMBWA`), IG (`https://www.instagram.com/kiki_garod_studio/`)
+
+## useScroll Configuration
+
+### FilmShowcase
+```ts
+const { scrollYProgress } = useScroll({
+  target: sectionRef,
+  offset: ['start start', 'end end']
+});
+```
+- `sectionRef` is attached to the outer `<section>` element
+- Height is `n * 100vh` (500vh)
+
+### ClosingShutter
+```ts
+const { scrollYProgress } = useScroll({
+  target: shutterRef,
+  offset: ['start end', 'end end']
+});
+```
+
+### FilmGallery (CircularGallery)
+- Uses its own `useScroll` internally with ~500vh scroll container
+
+### ScreenReveal
+- Clip-path animation wrapper
+- Uses its own `useScroll` independent of FilmShowcase
+- Reveals FilmShowcase content with a clipping animation
+
+## HANDOFF_RANGES (metadata fade values)
+Defined in film-showcase.tsx as a constant array:
+```ts
+const HANDOFF_RANGES = [
+  { start: 0.09, end: 0.15 },  // KaDaw
+  { start: 0.34, end: 0.40 },  // Lanot
+  { start: 0.59, end: 0.65 },  // Kadaw
+  { start: 0.76, end: 0.82 },  // 9-Lad
+  { start: 0.90, end: 0.96 },  // Kñi
+];
+```
+Applied per-frame via `useMotionValueEvent(scrollYProgress, 'change', callback)`.
+
+## Button component variants
+Located at `src/components/ui/button.tsx`:
+- Uses `@base-ui/react/button` (NOT `@radix-ui/react-slot`)
+- Variants: default, outline, secondary, ghost, destructive, link
+- Sizes: default, xs, sm, lg, icon, icon-xs, icon-sm, icon-lg
+- Import: `import { Button, type buttonVariants } from '@/components/ui/button'`
+
+## Site-wide CSS
+- `globals.css` imports: `@import "tailwindcss"`, `@import "tw-animate-css"`, `@import "shadcn/tailwind.css"`
+- Body font: `'Inter', sans-serif` (applied via `@layer base`)
+- `overflow-x: hidden` on `<html>`
+
+## Images Used (Unsplash URLs for placeholders)
+- Film posters: Various Unsplash images (see filmProjects data)
+- Interview: `photo-1492691527719-9d1e07e534b4` (person on phone)
+- Team members: Generic Unsplash portraits
+- Music videos: Various Unsplash cinematic/creative images
+- About portrait: `photo-1492691527719-9d1e07e534b4` (same as interview)
+- Portfolio stack: `photo-1489599849927-2ee91cede3ba`, `photo-1506905925346-21bda4d32df4`, `photo-1618005182384-a83a8bd57fbe`
+
+## Hero Canvas Animation
+- 240 frames in `public/scrollinganimation/ezgif-frame-{001..240}.jpg`
+- Canvas draws frames sequentially with frame counting
+- Uses `process.env.NEXT_PUBLIC_BASE_PATH` for GH Pages asset path prefix
 
 ## Nav Links
 - **About** → `#about` (scrolls to AboutSection)
