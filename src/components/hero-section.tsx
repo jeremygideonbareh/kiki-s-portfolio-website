@@ -34,7 +34,8 @@ export default function HeroSection() {
     let count = 0;
     for (let i = 1; i <= TOTAL_FRAMES; i++) {
       const img = new Image();
-      img.src = '/scrollinganimation/ezgif-frame-' + pad(i) + '.jpg';
+      const bp = process.env.NEXT_PUBLIC_BASE_PATH || '';
+      img.src = bp + '/scrollinganimation/ezgif-frame-' + pad(i) + '.jpg';
       img.onload = img.onerror = () => {
         count++;
         if (count === TOTAL_FRAMES) {
